@@ -8,6 +8,7 @@ from tensorflow import keras
 DEFAULT_SIZE_FEATURE = (299, 299)
 DEFAULT_IMAGE_COLOR_DEEP = 256
 DEFAULT_ALPHA = 0.4
+DEFAULT_OUTPUT_FILE_IMAGE = "Heat_map.jpg"
 
 
 class GradCAM:
@@ -15,7 +16,9 @@ class GradCAM:
     def __init__(self):
         self.size_image = DEFAULT_SIZE_FEATURE
         self.neural_model = None
-        self.output_image = "Heat_map.jpg"
+        self.output_image = DEFAULT_OUTPUT_FILE_IMAGE
+        self.alpha = DEFAULT_ALPHA
+        self.image_color_deep = DEFAULT_IMAGE_COLOR_DEEP
         pass
 
     def get_image_array(self, image_path):
@@ -49,14 +52,14 @@ class GradCAM:
 
         img = keras.preprocessing.image.load_img(image_input)
         img = keras.preprocessing.image.img_to_array(img)
-        heat_map = np.uint8((DEFAULT_IMAGE_COLOR_DEEP-1) * heat_map)
+        heat_map = np.uint8((self.image_color_deep-1) * heat_map)
         jet = cm.get_cmap("jet")
-        jet_colors = jet(np.arange(DEFAULT_IMAGE_COLOR_DEEP))[:, :3]
+        jet_colors = jet(np.arange(self.image_color_deep))[:, :3]
         jet_heatmap = jet_colors[heat_map]
         jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
         jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
-        superimposed_img = jet_heatmap * DEFAULT_ALPHA + img
+        superimposed_img = jet_heatmap * self.alpha + img
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
         superimposed_img.save(self.output_image)
 
