@@ -44,20 +44,20 @@ class GradCAM:
 
         return heat_map.numpy()
 
-    def save_and_display_gradcam(self, img_path, heatmap, cam_path="cam.jpg", alpha=0.4):
+    def save_and_display_grad_cam(self, image_input, heat_map, output_file="cam.jpg", alpha=0.4):
 
-        img = keras.preprocessing.image.load_img(img_path)
+        img = keras.preprocessing.image.load_img(image_input)
         img = keras.preprocessing.image.img_to_array(img)
-        heatmap = np.uint8(255 * heatmap)
+        heat_map = np.uint8(255 * heat_map)
         jet = cm.get_cmap("jet")
         jet_colors = jet(np.arange(256))[:, :3]
-        jet_heatmap = jet_colors[heatmap]
+        jet_heatmap = jet_colors[heat_map]
         jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
         jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
         superimposed_img = jet_heatmap * alpha + img
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
-        superimposed_img.save(cam_path)
+        superimposed_img.save(output_file)
 
 
 model_builder = keras.applications.xception.Xception
