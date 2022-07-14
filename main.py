@@ -20,20 +20,18 @@ SAMPLE_RATE = 8000
 FRAME_SIZE = 60
 
 
-def windows(data, window_size, noise):
+def windows(data, window_size):
     start = 0
 
     while start < len(data):
         yield start, start + window_size
-        start += (window_size // noise)
+        start += (window_size // 1)
 
 
-def extract_features(sub_dirs, file_ext=""):
+def extract_features(sub_dirs):
     window_size = int((DEFAULT_HOP_LENGTH * (FRAME_SIZE - 1)))
-    print("Window SIZE {}".format(window_size))
-    log_specgrams = []
-    labels = []
-    noise = 1
+    spectrogram_list = []
+    labels_list = []
 
     for l, sub_dir in enumerate(sub_dirs):
 
@@ -41,7 +39,7 @@ def extract_features(sub_dirs, file_ext=""):
 
             sound_clip, _ = librosa.load(fn, sr=SAMPLE_RATE)
 
-            for s, (start, end) in enumerate(windows(sound_clip, window_size, noise)):
+            for s, (start, end) in enumerate(windows(sound_clip, window_size)):
 
                 if len(sound_clip[start:end]) == window_size:
                     signal = sound_clip[start:end]
@@ -49,14 +47,12 @@ def extract_features(sub_dirs, file_ext=""):
                                                center=True)
                     spectrogram = librosa.power_to_db(numpy.abs(spectrogram), ref=np.max)
                     spectrogram = spectrogram / 80 + 1
-                    log_specgrams.append(spectrogram)
-                    labels.append(int(sub_dir))
+                    spectrogram_list.append(spectrogram)
+                    labels_list.append(int(sub_dir))
 
-    features = np.asarray(log_specgrams).reshape(len(log_specgrams), int(DEFAULT_WINDOW_SIZE / 2) + 1, FRAME_SIZE, 1)
+    features = np.asarray(spectrogram_list).reshape(len(spectrogram_list), int(DEFAULT_WINDOW_SIZE / 2) + 1, FRAME_SIZE,
+                                                    1)
     features = np.array(features, dtype=numpy.float32)
-    np_labels = np.array(labels, dtype=numpy.float32)
-    unique, counts = np.unique(np_labels, return_counts=True)
-    print(dict(zip(unique, counts)))
 
     return np.array(features), np_labels
 
