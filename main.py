@@ -13,18 +13,18 @@ class GradCAM:
 
     def __init__(self):
         self.size_image = DEFAULT_SIZE_FEATURE
+        self.neural_model = None
         pass
 
-    def get_img_array(self, img_path, size):
+    def get_img_array(self, img_path):
         img = keras.preprocessing.image.load_img(img_path, target_size=self.size_image)
         array = keras.preprocessing.image.img_to_array(img)
         array = np.expand_dims(array, axis=0)
         return array
 
-    @staticmethod
-    def make_gradcam_heatmap(img_array, model, last_conv_layer_name, index_predict=None):
-        last_conv_layer = model.get_layer(last_conv_layer_name).output
-        grad_model = tf.keras.models.Model([model.inputs], [last_conv_layer, model.output])
+    def make_gradcam_heatmap(self, img_array, last_conv_layer_name, index_predict=None):
+        last_conv_layer = self.neural_model.get_layer(last_conv_layer_name).output
+        grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
         with tf.GradientTape() as tape:
             last_conv_layer_output, classifier = grad_model(img_array)
