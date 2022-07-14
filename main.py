@@ -43,27 +43,16 @@ def extract_features(sub_dirs, file_ext=""):
 
             for s, (start, end) in enumerate(windows(sound_clip, window_size, noise)):
 
-                if (len(sound_clip[start:end]) == window_size):
-
+                if len(sound_clip[start:end]) == window_size:
                     signal = sound_clip[start:end]
-                    logspec = librosa.stft(signal, n_fft=WIDOWN_SIZE, hop_length=DEFAULT_HOP_LENGTH, center=True)
-                    # logspec = librosa.feature.melspectrogram(signal, n_mels=60, sr=sample_rate, n_fft=WIDOWN_SIZE, hop_length=DEFAULT_HOP_LENGTH)
-                    logspec = librosa.power_to_db(numpy.abs(logspec), ref=np.max)
-                    logspec = logspec / 80 + 1
-                    # print(logspec)
-                    # exit()
-                    # print("CARREGOU")
-                    # from PIL import Image
-                    # img = Image.fromarray(np.uint8(logspec.reshape((int(WIDOWN_SIZE/2)+1, FRAME_SIZE)) * 255) , 'L')
-                    # img.save("image_Mosquito{}.png".format(s))
-                    # return
-                    if random.randint(0, 10) < 8:
-                        log_specgrams.append(logspec)
-                        labels.append(int(sub_dir))
-            # return
+                    spectrogram = librosa.stft(signal, n_fft=DEFAULT_WINDOW_SIZE, hop_length=DEFAULT_HOP_LENGTH,
+                                               center=True)
+                    spectrogram = librosa.power_to_db(numpy.abs(spectrogram), ref=np.max)
+                    spectrogram = spectrogram / 80 + 1
+                    log_specgrams.append(spectrogram)
+                    labels.append(int(sub_dir))
 
-    features = np.asarray(log_specgrams).reshape(len(log_specgrams), int(WIDOWN_SIZE / 2) + 1, FRAME_SIZE, 1)
-    # features = np.asarray(log_specgrams).reshape(len(log_specgrams), 60, 40, 1)
+    features = np.asarray(log_specgrams).reshape(len(log_specgrams), int(DEFAULT_WINDOW_SIZE / 2) + 1, FRAME_SIZE, 1)
     features = np.array(features, dtype=numpy.float32)
     np_labels = np.array(labels, dtype=numpy.float32)
     unique, counts = np.unique(np_labels, return_counts=True)
