@@ -9,6 +9,7 @@ DEFAULT_SIZE_FEATURE = (299, 299)
 DEFAULT_IMAGE_COLOR_DEEP = 256
 DEFAULT_ALPHA = 0.4
 DEFAULT_OUTPUT_FILE_IMAGE = "Heat_map.jpg"
+DEFAULT_LAST_CONVOLUTION_LAYER = "conv"
 
 
 class GradCAM:
@@ -19,6 +20,7 @@ class GradCAM:
         self.output_image = DEFAULT_OUTPUT_FILE_IMAGE
         self.alpha = DEFAULT_ALPHA
         self.image_color_deep = DEFAULT_IMAGE_COLOR_DEEP
+        self.last_convolution_layer_name = DEFAULT_LAST_CONVOLUTION_LAYER
         pass
 
     def get_image_array(self, image_path):
@@ -27,8 +29,8 @@ class GradCAM:
         image_array_map = numpy.expand_dims(image_array_map, axis=0)
         return image_array_map
 
-    def make_grad_cam_heatmap(self, image_list, last_conv_name, index_predict=None):
-        last_conv_layer = self.neural_model.get_layer(last_conv_name).output
+    def make_grad_cam_heatmap(self, image_list, index_predict=None):
+        last_conv_layer = self.neural_model.get_layer(self.last_convolution_layer_name).output
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
         with tf.GradientTape() as tape:
@@ -71,4 +73,28 @@ class GradCAM:
         self.neural_model = model_from_json(loaded_model_json)
         self.neural_model.load_weights('{}.h5'.format(prefix_model))
 
-    def get_grad_cam_map(self):
+    def save_and_display_gradcam(img_path, heatmap, cam_path="cam.jpg", alpha=0.4):
+
+        img = keras.preprocessing.image.load_img(img_path)
+        img = keras.preprocessing.image.img_to_array(img)
+
+        heatmap = np.uint8(255 * heatmap)
+        jet = cm.get_cmap("jet")
+
+        jet_colors = jet(np.arange(256))[:, :3]
+        jet_heatmap = jet_colors[heatmap]
+
+        jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
+        jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
+        jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
+
+        superimposed_img = jet_heatmap * alpha + img
+        superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
+
+        # Save the superimposed image
+        superimposed_img.save(cam_path)
+
+        # Display Grad CAM
+        display(Image(cam_path))
+
+    save_and_display_gradcam(img_path, heatmap)
