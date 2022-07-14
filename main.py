@@ -21,6 +21,30 @@ class GradCAM:
         array = np.expand_dims(array, axis=0)
         return array
 
+    def make_gradcam_heatmap(self, img_array, model, last_conv_layer_name, pred_index=None):
+        last_conv_layer = model.get_layer(last_conv_layer_name).output
+        grad_model = tf.keras.models.Model([model.inputs], [last_conv_layer, model.output])
+
+        with tf.GradientTape() as tape:
+            last_conv_layer_output, preds = grad_model(img_array)
+            if pred_index is None:
+                pred_index = tf.argmax(preds[0])
+            class_channel = preds[:, pred_index]
+
+        grads = tape.gradient(class_channel, last_conv_layer_output)
+        pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
+        # We multiply each channel in the feature map array
+        # by "how important this channel is" with regard to the top predicted class
+        # then sum all the channels to obtain the heatmap class activation
+        last_conv_layer_output = last_conv_layer_output[0]
+        heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+        heatmap = tf.squeeze(heatmap)
+
+        # For visualization purpose, we will also normalize the heatmap between 0 & 1
+        heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+        return heatmap.numpy()
+
 
 model_builder = keras.applications.xception.Xception
 img_size = (299, 299)
