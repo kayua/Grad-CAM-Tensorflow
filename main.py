@@ -76,4 +76,4 @@ class GradCAM:
 
 
 grad_cam = GradCAM()
-grad_cam.load_model()
+grad_cam.load_model("model_trained_mosquitos")
