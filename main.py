@@ -1,3 +1,4 @@
+import numpy
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -16,13 +17,13 @@ class GradCAM:
         self.neural_model = None
         pass
 
-    def get_img_array(self, img_path):
-        img = keras.preprocessing.image.load_img(img_path, target_size=self.size_image)
-        array = keras.preprocessing.image.img_to_array(img)
-        array = np.expand_dims(array, axis=0)
-        return array
+    def get_image_array(self, image_path):
+        image_array = keras.preprocessing.image.load_img(image_path, target_size=self.size_image)
+        image_array_map = keras.preprocessing.image.img_to_array(image_array)
+        image_array_map = numpy.expand_dims(image_array_map, axis=0)
+        return image_array_map
 
-    def make_gradcam_heatmap(self, img_array, last_conv_layer_name, index_predict=None):
+    def make_grad_cam_heatmap(self, img_array, last_conv_layer_name, index_predict=None):
         last_conv_layer = self.neural_model.get_layer(last_conv_layer_name).output
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
@@ -42,6 +43,21 @@ class GradCAM:
         heat_map = tf.maximum(heat_map, 0) / tf.math.reduce_max(heat_map)
 
         return heat_map.numpy()
+
+    def save_and_display_gradcam(self, img_path, heatmap, cam_path="cam.jpg", alpha=0.4):
+
+        img = keras.preprocessing.image.load_img(img_path)
+        img = keras.preprocessing.image.img_to_array(img)
+        heatmap = np.uint8(255 * heatmap)
+        jet = cm.get_cmap("jet")
+        jet_colors = jet(np.arange(256))[:, :3]
+        jet_heatmap = jet_colors[heatmap]
+        jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
+        jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
+        jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
+        superimposed_img = jet_heatmap * alpha + img
+        superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
+        superimposed_img.save(cam_path)
 
 
 model_builder = keras.applications.xception.Xception
