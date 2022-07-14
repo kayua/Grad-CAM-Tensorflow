@@ -23,12 +23,12 @@ class GradCAM:
         image_array_map = numpy.expand_dims(image_array_map, axis=0)
         return image_array_map
 
-    def make_grad_cam_heatmap(self, img_array, last_conv_layer_name, index_predict=None):
-        last_conv_layer = self.neural_model.get_layer(last_conv_layer_name).output
+    def make_grad_cam_heatmap(self, image_list, last_conv_name, index_predict=None):
+        last_conv_layer = self.neural_model.get_layer(last_conv_name).output
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
         with tf.GradientTape() as tape:
-            last_conv_layer_output, classifier = grad_model(img_array)
+            last_conv_layer_output, classifier = grad_model(image_list)
             if index_predict is None:
                 predict_index = tf.argmax(classifier[0])
             class_channel = classifier[:, predict_index]
