@@ -89,7 +89,7 @@ class GradCAM:
 
         return heat_map.numpy()
 
-    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=0.1):
+    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=0.5):
         heatmap = np.uint8(255 * heatmap)
 
         # Use jet colormap to colorize heatmap
@@ -103,7 +103,7 @@ class GradCAM:
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
 
         # Superimpose the heatmap on original image
-        superimposed_img = jet_heatmap * alpha + img*32
+        superimposed_img = jet_heatmap * alpha + img*64
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
 
         # Save the superimposed image
@@ -123,9 +123,15 @@ grad_cam = GradCAM()
 grad_cam.load_model("models/model_trained_mosquitos")
 features, labels = extract_features(["Aedes", "Noise"])
 
-heatmap = grad_cam.make_grad_cam_heatmap(features[0])
-print(heatmap.shape)
-heatmap = numpy.reshape(heatmap, (32, 3))
-plt.matshow(heatmap)
-plt.show()
-grad_cam.save_and_display_gradcam(features[0], heatmap)
+list_gradient_feature = []
+image_feature = features[0]
+image_heat_map = grad_cam.make_grad_cam_heatmap(features[0])
+for i in range(1, 8):
+
+    heatmap = grad_cam.make_grad_cam_heatmap(features[i])
+    image_feature = numpy.concatenate((image_feature, features[i]), axis=1)
+    image_heat_map = numpy.concatenate((image_heat_map, heatmap), axis=1)
+
+    print(image_feature.shape)
+    print(image_heat_map.shape)
+    grad_cam.save_and_display_gradcam(image_feature, image_heat_map)
