@@ -30,11 +30,12 @@ def windows(data, window_size):
 
 
 def extract_features(sub_dirs):
+
     window_size = int((DEFAULT_HOP_LENGTH * (FRAME_SIZE - 1)))
     spectrogram_list = []
     labels_list = []
 
-    for l, sub_dir in enumerate(sub_dirs):
+    for sub_dir in sub_dirs:
 
         for fn in tqdm(glob.glob(DEFAULT_PATH_SOUNDS + sub_dir + "/*"), desc="Loading {}".format(sub_dir)):
 
@@ -51,8 +52,8 @@ def extract_features(sub_dirs):
                     spectrogram_list.append(spectrogram)
                     labels_list.append(int(sub_dir))
 
-    features = np.asarray(spectrogram_list).reshape(len(spectrogram_list), int(DEFAULT_WINDOW_SIZE / 2) + 1, FRAME_SIZE,
-                                                    1)
+    fft_window = int(DEFAULT_WINDOW_SIZE / 2) + 1
+    features = np.asarray(spectrogram_list).reshape(len(spectrogram_list), fft_window, FRAME_SIZE, 1)
     features = np.array(features, dtype=numpy.float32)
 
     return np.array(features), labels_list
@@ -120,3 +121,4 @@ class GradCAM:
 
 grad_cam = GradCAM()
 grad_cam.load_model("models/model_trained_mosquitos")
+features, labels = extract_features(["Aedes", "Noise"])
