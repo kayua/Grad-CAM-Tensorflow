@@ -10,6 +10,72 @@ DEFAULT_IMAGE_COLOR_DEEP = 256
 DEFAULT_ALPHA = 0.4
 DEFAULT_OUTPUT_FILE_IMAGE = "Heat_map.jpg"
 DEFAULT_LAST_CONVOLUTION_LAYER = "conv"
+DEFAULT_HOP_LENGTH = 256
+DEFAULT_WINDOW_SIZE = 1024
+AMOSTRAGEM = 8000
+FRAME_SIZE = 60
+
+def windows(data, window_size, noise):
+    start = 0
+
+    while start < len(data):
+        yield start, start + window_size
+        start += (window_size // noise)
+
+
+
+
+
+def extract_features(sub_dirs, file_ext=""):
+    window_size = int((DEFAULT_HOP_LENGTH * (FRAME_SIZE - 1)))
+    print("Window SIZE {}".format(window_size))
+    log_specgrams = []
+    labels = []
+    noise = 1
+
+    for l, sub_dir in enumerate(sub_dirs):
+
+        for fn in tqdm(glob.glob('drive/MyDrive/D4/' + sub_dir + "/*"), desc="Loading {}".format(sub_dir)):
+
+            sound_clip, _ = librosa.load(fn, sr=AMOSTRAGEM)
+
+            label = fn.split('/')[0].split('_')[0]
+            if sub_dir == "1":
+                noise = 1
+
+            else:
+                noise = 1
+
+            for s, (start, end) in enumerate(windows(sound_clip, window_size, noise)):
+
+                if (len(sound_clip[start:end]) == window_size):
+
+                    signal = sound_clip[start:end]
+                    logspec = librosa.stft(signal, n_fft=WIDOWN_SIZE, hop_length=DEFAULT_HOP_LENGTH, center=True)
+                    # logspec = librosa.feature.melspectrogram(signal, n_mels=60, sr=sample_rate, n_fft=WIDOWN_SIZE, hop_length=DEFAULT_HOP_LENGTH)
+                    logspec = librosa.power_to_db(numpy.abs(logspec), ref=np.max)
+                    logspec = logspec / 80 + 1
+                    # print(logspec)
+                    # exit()
+                    # print("CARREGOU")
+                    # from PIL import Image
+                    # img = Image.fromarray(np.uint8(logspec.reshape((int(WIDOWN_SIZE/2)+1, FRAME_SIZE)) * 255) , 'L')
+                    # img.save("image_Mosquito{}.png".format(s))
+                    # return
+                    if random.randint(0, 10) < 8:
+                        log_specgrams.append(logspec)
+                        labels.append(int(sub_dir))
+            # return
+
+    features = np.asarray(log_specgrams).reshape(len(log_specgrams), int(WIDOWN_SIZE / 2) + 1, FRAME_SIZE, 1)
+    # features = np.asarray(log_specgrams).reshape(len(log_specgrams), 60, 40, 1)
+    features = np.array(features, dtype=numpy.float32)
+    np_labels = np.array(labels, dtype=numpy.float32)
+    unique, counts = np.unique(np_labels, return_counts=True)
+    print(dict(zip(unique, counts)))
+
+    return np.array(features), np_labels
+
 
 
 class GradCAM:
@@ -76,4 +142,4 @@ class GradCAM:
 
 
 grad_cam = GradCAM()
-grad_cam.load_model("model_trained_mosquitos")
+grad_cam.load_model("models/model_trained_mosquitos")
