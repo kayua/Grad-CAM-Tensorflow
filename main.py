@@ -6,7 +6,6 @@ import numpy
 import numpy as np
 import tensorflow as tf
 from keras.models import model_from_json, Model
-from matplotlib import pyplot as plt
 from tensorflow import keras
 from tqdm import tqdm
 
@@ -14,7 +13,7 @@ DEFAULT_SIZE_FEATURE = (299, 299)
 DEFAULT_IMAGE_COLOR_DEEP = 256
 DEFAULT_ALPHA = 0.4
 DEFAULT_OUTPUT_FILE_IMAGE = "Heat_map.jpg"
-DEFAULT_LAST_CONVOLUTION_LAYER = "concatenate_4"
+DEFAULT_LAST_CONVOLUTION_LAYER = "last_layer"
 DEFAULT_HOP_LENGTH = 256
 DEFAULT_WINDOW_SIZE = 1024
 SAMPLE_RATE = 8000
@@ -62,7 +61,7 @@ def extract_features(sub_dirs):
 class GradCAM:
 
     def __init__(self):
-        self.size_image = DEFAULT_SIZE_FEATURE
+
         self.neural_model = None
         self.output_image = DEFAULT_OUTPUT_FILE_IMAGE
         self.alpha = DEFAULT_ALPHA
@@ -93,7 +92,7 @@ class GradCAM:
         heatmap = np.uint8(255 * heatmap)
 
         # Use jet colormap to colorize heatmap
-        jet = cm.get_cmap("jet")
+        jet = cm.get_cmap("gnuplot")
 
         jet_colors = jet(np.arange(256))[:, :3]
         jet_heatmap = jet_colors[heatmap]
@@ -126,12 +125,15 @@ features, labels = extract_features(["Aedes", "Noise"])
 list_gradient_feature = []
 image_feature = features[0]
 image_heat_map = grad_cam.make_grad_cam_heatmap(features[0])
+image_heat_map = image_heat_map.reshape((16, 1))
 for i in range(1, 8):
 
     heatmap = grad_cam.make_grad_cam_heatmap(features[i])
+    heatmap = heatmap.reshape((16, 1))
+    print(heatmap.shape)
     image_feature = numpy.concatenate((image_feature, features[i]), axis=1)
     image_heat_map = numpy.concatenate((image_heat_map, heatmap), axis=1)
 
-    print(image_feature.shape)
-    print(image_heat_map.shape)
+    #print(image_feature.shape)
+    #print(image_heat_map.shape)
     grad_cam.save_and_display_gradcam(image_feature, image_heat_map)
