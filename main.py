@@ -13,7 +13,7 @@ DEFAULT_SIZE_FEATURE = (299, 299)
 DEFAULT_IMAGE_COLOR_DEEP = 256
 DEFAULT_ALPHA = 0.4
 DEFAULT_OUTPUT_FILE_IMAGE = "Heat_map.jpg"
-DEFAULT_LAST_CONVOLUTION_LAYER = "conv"
+DEFAULT_LAST_CONVOLUTION_LAYER = "last_layer"
 DEFAULT_HOP_LENGTH = 256
 DEFAULT_WINDOW_SIZE = 1024
 SAMPLE_RATE = 8000
@@ -50,7 +50,7 @@ def extract_features(sub_dirs):
                     spectrogram = librosa.power_to_db(numpy.abs(spectrogram), ref=np.max)
                     spectrogram = spectrogram / 80 + 1
                     spectrogram_list.append(spectrogram)
-                    labels_list.append(int(sub_dir))
+                    labels_list.append(sub_dir)
 
     fft_window = int(DEFAULT_WINDOW_SIZE / 2) + 1
     features = np.asarray(spectrogram_list).reshape(len(spectrogram_list), fft_window, FRAME_SIZE, 1)
@@ -70,20 +70,14 @@ class GradCAM:
         self.last_convolution_layer_name = DEFAULT_LAST_CONVOLUTION_LAYER
         pass
 
-    def get_image_array(self, image_path):
-        image_array = keras.preprocessing.image.load_img(image_path, target_size=self.size_image)
-        image_array_map = keras.preprocessing.image.img_to_array(image_array)
-        image_array_map = numpy.expand_dims(image_array_map, axis=0)
-        return image_array_map
 
-    def make_grad_cam_heatmap(self, image_list, index_predict=None):
+    def make_grad_cam_heatmap(self, image_list):
         last_conv_layer = self.neural_model.get_layer(self.last_convolution_layer_name).output
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
         with tf.GradientTape() as tape:
             last_conv_layer_output, classifier = grad_model(image_list)
-            if index_predict is None:
-                predict_index = tf.argmax(classifier[0])
+            predict_index = tf.argmax(classifier[0])
             class_channel = classifier[:, predict_index]
 
         gradient_propagation = tape.gradient(class_channel, last_conv_layer_output)
@@ -122,3 +116,5 @@ class GradCAM:
 grad_cam = GradCAM()
 grad_cam.load_model("models/model_trained_mosquitos")
 features, labels = extract_features(["Aedes", "Noise"])
+
+grad_cam.make_grad_cam_heatmap(features)
