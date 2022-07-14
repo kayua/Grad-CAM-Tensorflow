@@ -18,6 +18,7 @@ DEFAULT_HOP_LENGTH = 256
 DEFAULT_WINDOW_SIZE = 1024
 SAMPLE_RATE = 8000
 FRAME_SIZE = 60
+DEFAULT_PATH_SOUNDS = 'Dataset/'
 
 
 def windows(data, window_size):
@@ -35,7 +36,7 @@ def extract_features(sub_dirs):
 
     for l, sub_dir in enumerate(sub_dirs):
 
-        for fn in tqdm(glob.glob('drive/MyDrive/D4/' + sub_dir + "/*"), desc="Loading {}".format(sub_dir)):
+        for fn in tqdm(glob.glob(DEFAULT_PATH_SOUNDS + sub_dir + "/*"), desc="Loading {}".format(sub_dir)):
 
             sound_clip, _ = librosa.load(fn, sr=SAMPLE_RATE)
 
@@ -54,7 +55,7 @@ def extract_features(sub_dirs):
                                                     1)
     features = np.array(features, dtype=numpy.float32)
 
-    return np.array(features), np_labels
+    return np.array(features), labels_list
 
 
 class GradCAM:
