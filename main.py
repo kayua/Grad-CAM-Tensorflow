@@ -73,23 +73,7 @@ class GradCAM:
         self.neural_model = model_from_json(loaded_model_json)
         self.neural_model.load_weights('{}.h5'.format(prefix_model))
 
-    def save_and_display_gradcam(self, img_path, heatmap, cam_path="cam.jpg", alpha=0.4):
 
-        img = keras.preprocessing.image.load_img(img_path)
-        img = keras.preprocessing.image.img_to_array(img)
 
-        heatmap = np.uint8(255 * heatmap)
-        jet = cm.get_cmap("jet")
-
-        jet_colors = jet(np.arange(256))[:, :3]
-        jet_heatmap = jet_colors[heatmap]
-
-        jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
-        jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
-        jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
-
-        superimposed_img = jet_heatmap * alpha + img
-        superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
-
-        superimposed_img.save(cam_path)
-
+grad_cam = GradCAM()
+grad_cam.load_model()
