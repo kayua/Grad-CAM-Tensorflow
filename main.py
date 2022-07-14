@@ -21,29 +21,27 @@ class GradCAM:
         array = np.expand_dims(array, axis=0)
         return array
 
-    def make_gradcam_heatmap(self, img_array, model, last_conv_layer_name, pred_index=None):
+    @staticmethod
+    def make_gradcam_heatmap(img_array, model, last_conv_layer_name, index_predict=None):
         last_conv_layer = model.get_layer(last_conv_layer_name).output
         grad_model = tf.keras.models.Model([model.inputs], [last_conv_layer, model.output])
 
         with tf.GradientTape() as tape:
-            last_conv_layer_output, preds = grad_model(img_array)
-            if pred_index is None:
-                pred_index = tf.argmax(preds[0])
-            class_channel = preds[:, pred_index]
+            last_conv_layer_output, classifier = grad_model(img_array)
+            if index_predict is None:
+                predict_index = tf.argmax(classifier[0])
+            class_channel = classifier[:, predict_index]
 
-        grads = tape.gradient(class_channel, last_conv_layer_output)
-        pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+        gradient_propagation = tape.gradient(class_channel, last_conv_layer_output)
+        pooled_grads = tf.reduce_mean(gradient_propagation, axis=(0, 1, 2))
 
-        # We multiply each channel in the feature map array
-        # by "how important this channel is" with regard to the top predicted class
-        # then sum all the channels to obtain the heatmap class activation
         last_conv_layer_output = last_conv_layer_output[0]
-        heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
-        heatmap = tf.squeeze(heatmap)
 
-        # For visualization purpose, we will also normalize the heatmap between 0 & 1
-        heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-        return heatmap.numpy()
+        heat_map = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+        heat_map = tf.squeeze(heat_map)
+        heat_map = tf.maximum(heat_map, 0) / tf.math.reduce_max(heat_map)
+
+        return heat_map.numpy()
 
 
 model_builder = keras.applications.xception.Xception
