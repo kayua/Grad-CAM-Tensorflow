@@ -31,7 +31,6 @@ def windows(data, window_size):
 
 
 def extract_features(sub_dirs):
-
     window_size = int((DEFAULT_HOP_LENGTH * (FRAME_SIZE - 1)))
     spectrogram_list = []
     labels_list = []
@@ -71,7 +70,6 @@ class GradCAM:
         self.last_convolution_layer_name = DEFAULT_LAST_CONVOLUTION_LAYER
         pass
 
-
     def make_grad_cam_heatmap(self, image_list):
         last_conv_layer = self.neural_model.get_layer(self.last_convolution_layer_name).output
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
@@ -87,28 +85,25 @@ class GradCAM:
         last_conv_layer_output = last_conv_layer_output[0]
         heat_map = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
         heat_map = tf.squeeze(heat_map)
-        heat_map = tf.maximum(heat_map, 0)/ tf.math.reduce_max(heat_map)
+        heat_map = tf.maximum(heat_map, 0) / tf.math.reduce_max(heat_map)
 
         return heat_map.numpy()
 
-    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=0.4):
-
+    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=0.1):
         heatmap = np.uint8(255 * heatmap)
 
         # Use jet colormap to colorize heatmap
         jet = cm.get_cmap("jet")
 
-        # Use RGB values of the colormap
         jet_colors = jet(np.arange(256))[:, :3]
         jet_heatmap = jet_colors[heatmap]
 
-        # Create an image with RGB colorized heatmap
         jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
         jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
 
         # Superimpose the heatmap on original image
-        superimposed_img = jet_heatmap * alpha + img
+        superimposed_img = jet_heatmap * alpha + img*32
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
 
         # Save the superimposed image
