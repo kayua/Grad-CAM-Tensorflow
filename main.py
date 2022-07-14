@@ -1,9 +1,13 @@
+import glob
+
+import librosa
 import matplotlib.cm as cm
 import numpy
 import numpy as np
 import tensorflow as tf
 from keras.models import model_from_json
 from tensorflow import keras
+from tqdm import tqdm
 
 DEFAULT_SIZE_FEATURE = (299, 299)
 DEFAULT_IMAGE_COLOR_DEEP = 256
@@ -15,15 +19,13 @@ DEFAULT_WINDOW_SIZE = 1024
 SAMPLE_RATE = 8000
 FRAME_SIZE = 60
 
+
 def windows(data, window_size, noise):
     start = 0
 
     while start < len(data):
         yield start, start + window_size
         start += (window_size // noise)
-
-
-
 
 
 def extract_features(sub_dirs, file_ext=""):
@@ -37,14 +39,7 @@ def extract_features(sub_dirs, file_ext=""):
 
         for fn in tqdm(glob.glob('drive/MyDrive/D4/' + sub_dir + "/*"), desc="Loading {}".format(sub_dir)):
 
-            sound_clip, _ = librosa.load(fn, sr=AMOSTRAGEM)
-
-            label = fn.split('/')[0].split('_')[0]
-            if sub_dir == "1":
-                noise = 1
-
-            else:
-                noise = 1
+            sound_clip, _ = librosa.load(fn, sr=SAMPLE_RATE)
 
             for s, (start, end) in enumerate(windows(sound_clip, window_size, noise)):
 
@@ -75,7 +70,6 @@ def extract_features(sub_dirs, file_ext=""):
     print(dict(zip(unique, counts)))
 
     return np.array(features), np_labels
-
 
 
 class GradCAM:
@@ -117,10 +111,9 @@ class GradCAM:
         return heat_map.numpy()
 
     def save_and_display_grad_cam(self, image_input, heat_map):
-
         img = keras.preprocessing.image.load_img(image_input)
         img = keras.preprocessing.image.img_to_array(img)
-        heat_map = np.uint8((self.image_color_deep-1) * heat_map)
+        heat_map = np.uint8((self.image_color_deep - 1) * heat_map)
         jet = cm.get_cmap("jet")
         jet_colors = jet(np.arange(self.image_color_deep))[:, :3]
         jet_heatmap = jet_colors[heat_map]
@@ -132,13 +125,11 @@ class GradCAM:
         superimposed_img.save(self.output_image)
 
     def load_model(self, prefix_model):
-
         json_file = open('{}.json'.format(prefix_model), 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         self.neural_model = model_from_json(loaded_model_json)
         self.neural_model.load_weights('{}.h5'.format(prefix_model))
-
 
 
 grad_cam = GradCAM()
