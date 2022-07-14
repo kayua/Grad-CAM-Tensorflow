@@ -117,4 +117,5 @@ grad_cam = GradCAM()
 grad_cam.load_model("models/model_trained_mosquitos")
 features, labels = extract_features(["Aedes", "Noise"])
 
-grad_cam.make_grad_cam_heatmap(features)
+heatmap = grad_cam.make_grad_cam_heatmap(features)
+grad_cam.save_and_display_grad_cam("output_path", heatmap[0])
