@@ -87,22 +87,32 @@ class GradCAM:
         last_conv_layer_output = last_conv_layer_output[0]
         heat_map = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
         heat_map = tf.squeeze(heat_map)
-        heat_map = tf.maximum(heat_map, 0)# / tf.math.reduce_max(heat_map)
+        heat_map = tf.maximum(heat_map, 0)/ tf.math.reduce_max(heat_map)
 
         return heat_map.numpy()
 
-    def save_and_display_grad_cam(self, image_input, heat_map):
-        img = image_input
-        heat_map = np.uint8((self.image_color_deep - 1) * heat_map)
+    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=0.4):
+
+        heatmap = np.uint8(255 * heatmap)
+
+        # Use jet colormap to colorize heatmap
         jet = cm.get_cmap("jet")
-        jet_colors = jet(np.arange(self.image_color_deep))[:, :1]
-        jet_heatmap = jet_colors[heat_map]
+
+        # Use RGB values of the colormap
+        jet_colors = jet(np.arange(256))[:, :3]
+        jet_heatmap = jet_colors[heatmap]
+
+        # Create an image with RGB colorized heatmap
         jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
         jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
-        superimposed_img = jet_heatmap * self.alpha + img
+
+        # Superimpose the heatmap on original image
+        superimposed_img = jet_heatmap * alpha + img
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
-        superimposed_img.save(self.output_image)
+
+        # Save the superimposed image
+        superimposed_img.save(cam_path)
 
     def load_model(self, prefix_model):
         json_file = open('{}.json'.format(prefix_model), 'r')
@@ -120,10 +130,7 @@ features, labels = extract_features(["Aedes", "Noise"])
 
 heatmap = grad_cam.make_grad_cam_heatmap(features[0])
 print(heatmap.shape)
-heatmap = numpy.reshape(heatmap, (32, 3, 1))
-#exit()
+heatmap = numpy.reshape(heatmap, (32, 3))
 plt.matshow(heatmap)
 plt.show()
-print(heatmap[0][0].shape)
-exit()
-grad_cam.save_and_display_grad_cam(features[0], heatmap[0])
+grad_cam.save_and_display_gradcam(features[0], heatmap)
