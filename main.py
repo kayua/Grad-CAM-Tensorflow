@@ -5,7 +5,8 @@ import matplotlib.cm as cm
 import numpy
 import numpy as np
 import tensorflow as tf
-from keras.models import model_from_json
+from keras.models import model_from_json, Model
+from matplotlib import pyplot as plt
 from tensorflow import keras
 from tqdm import tqdm
 
@@ -13,7 +14,7 @@ DEFAULT_SIZE_FEATURE = (299, 299)
 DEFAULT_IMAGE_COLOR_DEEP = 256
 DEFAULT_ALPHA = 0.4
 DEFAULT_OUTPUT_FILE_IMAGE = "Heat_map.jpg"
-DEFAULT_LAST_CONVOLUTION_LAYER = "last_layer"
+DEFAULT_LAST_CONVOLUTION_LAYER = "concatenate_4"
 DEFAULT_HOP_LENGTH = 256
 DEFAULT_WINDOW_SIZE = 1024
 SAMPLE_RATE = 8000
@@ -76,7 +77,7 @@ class GradCAM:
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
         with tf.GradientTape() as tape:
-            last_conv_layer_output, classifier = grad_model(image_list)
+            last_conv_layer_output, classifier = grad_model(image_list[None, :, :, :])
             predict_index = tf.argmax(classifier[0])
             class_channel = classifier[:, predict_index]
 
@@ -84,19 +85,17 @@ class GradCAM:
         pooled_grads = tf.reduce_mean(gradient_propagation, axis=(0, 1, 2))
 
         last_conv_layer_output = last_conv_layer_output[0]
-
         heat_map = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
         heat_map = tf.squeeze(heat_map)
-        heat_map = tf.maximum(heat_map, 0) / tf.math.reduce_max(heat_map)
+        heat_map = tf.maximum(heat_map, 0)# / tf.math.reduce_max(heat_map)
 
         return heat_map.numpy()
 
     def save_and_display_grad_cam(self, image_input, heat_map):
-        img = keras.preprocessing.image.load_img(image_input)
-        img = keras.preprocessing.image.img_to_array(img)
+        img = image_input
         heat_map = np.uint8((self.image_color_deep - 1) * heat_map)
         jet = cm.get_cmap("jet")
-        jet_colors = jet(np.arange(self.image_color_deep))[:, :3]
+        jet_colors = jet(np.arange(self.image_color_deep))[:, :1]
         jet_heatmap = jet_colors[heat_map]
         jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
         jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
@@ -111,11 +110,20 @@ class GradCAM:
         json_file.close()
         self.neural_model = model_from_json(loaded_model_json)
         self.neural_model.load_weights('{}.h5'.format(prefix_model))
+        self.neural_model = Model(self.neural_model.input, self.neural_model.layers[-2].output)
+        self.neural_model.summary()
 
 
 grad_cam = GradCAM()
 grad_cam.load_model("models/model_trained_mosquitos")
 features, labels = extract_features(["Aedes", "Noise"])
 
-heatmap = grad_cam.make_grad_cam_heatmap(features)
-grad_cam.save_and_display_grad_cam("output_path", heatmap[0])
+heatmap = grad_cam.make_grad_cam_heatmap(features[0])
+print(heatmap.shape)
+heatmap = numpy.reshape(heatmap, (32, 3, 1))
+#exit()
+plt.matshow(heatmap)
+plt.show()
+print(heatmap[0][0].shape)
+exit()
+grad_cam.save_and_display_grad_cam(features[0], heatmap[0])
