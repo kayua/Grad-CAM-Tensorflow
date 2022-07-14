@@ -15,6 +15,7 @@ class GradCAM:
     def __init__(self):
         self.size_image = DEFAULT_SIZE_FEATURE
         self.neural_model = None
+        self.output_image = "Heat_map.jpg"
         pass
 
     def get_image_array(self, image_path):
@@ -44,7 +45,7 @@ class GradCAM:
 
         return heat_map.numpy()
 
-    def save_and_display_grad_cam(self, image_input, heat_map, output_file="cam.jpg", alpha=0.4):
+    def save_and_display_grad_cam(self, image_input, heat_map, alpha=0.4):
 
         img = keras.preprocessing.image.load_img(image_input)
         img = keras.preprocessing.image.img_to_array(img)
@@ -57,7 +58,7 @@ class GradCAM:
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
         superimposed_img = jet_heatmap * alpha + img
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
-        superimposed_img.save(output_file)
+        superimposed_img.save(self.output_image)
 
 
 model_builder = keras.applications.xception.Xception
