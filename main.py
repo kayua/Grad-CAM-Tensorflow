@@ -123,17 +123,17 @@ grad_cam.load_model("models/model_trained_mosquitos")
 features, labels = extract_features(["Aedes", "Noise"])
 
 list_gradient_feature = []
-image_feature = features[1][0:460]
+image_feature = features[1]
 image_heat_map = grad_cam.make_grad_cam_heatmap(features[0])
 image_heat_map = image_heat_map.reshape((16, 1))
-image_heat_map = image_heat_map[8:16]
+image_heat_map = image_heat_map[0:16]
 
-for i in range(2, 16):
+for i in range(2, 32):
 
     heatmap = grad_cam.make_grad_cam_heatmap(features[i])
     heatmap = heatmap.reshape((16, 1))
-    heatmap = heatmap[8:16]
-    image_feature = numpy.concatenate((image_feature, features[i][0:460]), axis=1)
+    heatmap = heatmap[0:16]
+    image_feature = numpy.concatenate((image_feature, features[i]), axis=1)
     image_heat_map = numpy.concatenate((image_heat_map, heatmap), axis=1)
 
     #print(image_feature.shape)
