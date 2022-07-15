@@ -89,11 +89,11 @@ class GradCAM:
         print(classifier)
         return heat_map.numpy()
 
-    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=1):
+    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=0.8):
         heatmap = np.uint8(255 * heatmap)
 
         # Use jet colormap to colorize heatmap
-        jet = cm.get_cmap("turbo")
+        jet = cm.get_cmap("jet")
 
         jet_colors = jet(np.arange(256))[:, :3]
         jet_heatmap = jet_colors[heatmap]
@@ -126,13 +126,13 @@ list_gradient_feature = []
 image_feature = features[1]
 image_heat_map = grad_cam.make_grad_cam_heatmap(features[0])
 image_heat_map = image_heat_map.reshape((16, 1))
-image_heat_map = image_heat_map[0:16]
+image_heat_map = image_heat_map[2:16]
 
-for i in range(2, 32):
+for i in range(2, features.shape[0]):
 
     heatmap = grad_cam.make_grad_cam_heatmap(features[i])
     heatmap = heatmap.reshape((16, 1))
-    heatmap = heatmap[0:16]
+    heatmap = heatmap[2:16]
     image_feature = numpy.concatenate((image_feature, features[i]), axis=1)
     image_heat_map = numpy.concatenate((image_heat_map, heatmap), axis=1)
 
