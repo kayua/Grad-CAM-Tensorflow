@@ -72,7 +72,6 @@ class GradCAM:
 
     def make_grad_cam_heatmap(self, image_list):
         last_conv_layer = self.neural_model.get_layer(self.last_convolution_layer_name).output
-        #last_conv_layer = MaxPooling2D((2, 1))(last_conv_layer)
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
         with tf.GradientTape() as tape:
@@ -87,14 +86,14 @@ class GradCAM:
         heat_map = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
         heat_map = tf.squeeze(heat_map)
         heat_map = tf.maximum(heat_map, 0) / tf.math.reduce_max(heat_map)
-
+        print(classifier)
         return heat_map.numpy()
 
     def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=1):
         heatmap = np.uint8(255 * heatmap)
 
         # Use jet colormap to colorize heatmap
-        jet = cm.get_cmap("jet")
+        jet = cm.get_cmap("turbo")
 
         jet_colors = jet(np.arange(256))[:, :3]
         jet_heatmap = jet_colors[heatmap]
@@ -103,7 +102,6 @@ class GradCAM:
         jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
 
-        # Superimpose the heatmap on original image
         superimposed_img = jet_heatmap * alpha + img*256
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
 
@@ -125,21 +123,20 @@ grad_cam.load_model("models/model_trained_mosquitos")
 features, labels = extract_features(["Aedes", "Noise"])
 
 list_gradient_feature = []
-image_feature = features[0]
+image_feature = features[1][0:460]
 image_heat_map = grad_cam.make_grad_cam_heatmap(features[0])
 image_heat_map = image_heat_map.reshape((16, 1))
 image_heat_map = image_heat_map[8:16]
 
-for i in range(1, 8):
+for i in range(2, 16):
 
     heatmap = grad_cam.make_grad_cam_heatmap(features[i])
     heatmap = heatmap.reshape((16, 1))
     heatmap = heatmap[8:16]
-    print(heatmap.shape)
-
-    image_feature = numpy.concatenate((image_feature, features[i]), axis=1)
+    image_feature = numpy.concatenate((image_feature, features[i][0:460]), axis=1)
     image_heat_map = numpy.concatenate((image_heat_map, heatmap), axis=1)
 
     #print(image_feature.shape)
     #print(image_heat_map.shape)
-    grad_cam.save_and_display_gradcam(image_feature, image_heat_map)
+
+grad_cam.save_and_display_gradcam(image_feature, image_heat_map)
