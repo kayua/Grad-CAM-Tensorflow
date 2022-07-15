@@ -5,6 +5,7 @@ import matplotlib.cm as cm
 import numpy
 import numpy as np
 import tensorflow as tf
+from keras.layers import MaxPooling2D
 from keras.models import model_from_json, Model
 from tensorflow import keras
 from tqdm import tqdm
@@ -71,6 +72,7 @@ class GradCAM:
 
     def make_grad_cam_heatmap(self, image_list):
         last_conv_layer = self.neural_model.get_layer(self.last_convolution_layer_name).output
+        #last_conv_layer = MaxPooling2D((2, 1))(last_conv_layer)
         grad_model = tf.keras.models.Model([self.neural_model.inputs], [last_conv_layer, self.neural_model.output])
 
         with tf.GradientTape() as tape:
@@ -88,11 +90,11 @@ class GradCAM:
 
         return heat_map.numpy()
 
-    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=0.5):
+    def save_and_display_gradcam(self, img, heatmap, cam_path="cam.jpg", alpha=1):
         heatmap = np.uint8(255 * heatmap)
 
         # Use jet colormap to colorize heatmap
-        jet = cm.get_cmap("gnuplot")
+        jet = cm.get_cmap("jet")
 
         jet_colors = jet(np.arange(256))[:, :3]
         jet_heatmap = jet_colors[heatmap]
@@ -102,7 +104,7 @@ class GradCAM:
         jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
 
         # Superimpose the heatmap on original image
-        superimposed_img = jet_heatmap * alpha + img*64
+        superimposed_img = jet_heatmap * alpha + img*256
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
 
         # Save the superimposed image
@@ -126,11 +128,15 @@ list_gradient_feature = []
 image_feature = features[0]
 image_heat_map = grad_cam.make_grad_cam_heatmap(features[0])
 image_heat_map = image_heat_map.reshape((16, 1))
+image_heat_map = image_heat_map[8:16]
+
 for i in range(1, 8):
 
     heatmap = grad_cam.make_grad_cam_heatmap(features[i])
     heatmap = heatmap.reshape((16, 1))
+    heatmap = heatmap[8:16]
     print(heatmap.shape)
+
     image_feature = numpy.concatenate((image_feature, features[i]), axis=1)
     image_heat_map = numpy.concatenate((image_heat_map, heatmap), axis=1)
 
